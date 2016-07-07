@@ -67,7 +67,16 @@ chip8::void emulateCycle() {
 
 	// Decode opcode
 	switch (opcode & 0xF000) {
-		// some opcodes
+		case 0x0000:
+			switch (opcode & 0x000F) { 
+				case: 0x0000 // Opcode 00E0 Clear the Screen
+					for (int i = 0; i < 64 * 32; i++) {
+						gfx[i] =0;
+					}
+				break;
+			}
+		break;
+				
 		case 0xA000: // ANNN: Sets I to the address NNN
 			// Execute opcode
 			I = opcode & 0x0FFF;
