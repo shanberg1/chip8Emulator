@@ -3,7 +3,7 @@ class chip8 {
 		chip8();
 		~chip8();
 
-		bool drawFlag();
+		bool drawFlag;
 		void emulateCycle();
 		void debugRender();
 		bool loadApplication(const char * filename);
