@@ -25,11 +25,12 @@ unsigned char chip8_fontset[80] =
 
 chip8::chip8(){
 	// Empty
+	init();
 }
 chip8::~chip8() {
 	// Empty
 }
-chip8::void init() {
+void chip8::init() {
 	pc = 0x200;
 	opcode = 0;
 	I = 0;
@@ -60,7 +61,7 @@ chip8::void init() {
 	delay_timer = 0;
 	sound_timer = 0;
 }
-chip8::void emulateCycle() {
+void chip8:: emulateCycle() {
 	// Fetch opcode
 	opcode = memory[pc] << 8 | memory[pc + 1];
 
@@ -68,14 +69,14 @@ chip8::void emulateCycle() {
 	switch (opcode & 0xF000) {
 		case 0x0000:
 			switch (opcode & 0x000F) { 
-				case: 0x0000 // Opcode 00E0 Clear the Screen
+				case 0x0000: // Opcode 00E0 Clear the Screen
 					for (int i = 0; i < 64 * 32; i++) {
 						gfx[i] =0;
 					}
 					drawFlag = true;
 					pc+=2;
 				break;
-				case: 0x000E // Returns from a subroutine
+				case 0x000E: // Returns from a subroutine
 					sp--;
 					pc = stack[sp];
 					pc += 2;
@@ -91,14 +92,14 @@ chip8::void emulateCycle() {
 			pc = opcode & 0x0FFF;
 		break;
 		case 0x3000: // Skips the next instruction if VX doesn't equal NN
-			if (V[(opocode & 0x0F00) >> 8] == opcode & 0x00FF) {
+			if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
 				pc += 4;
 			} else {
 				pc += 2;
 			}
 		break;
 		case 0x4000: // Skips the next instruction if VX doesn't equal NN
-			if (V[(opocode & 0x0F00) >> 8] != opcode & 0x00FF) {
+			if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
 				pc += 4;
 			} else {
 				pc += 2;
@@ -138,7 +139,7 @@ chip8::void emulateCycle() {
 					pc += 2;
 				break;
 				case 0x8004: // opcode 8XY4 adds vy to vx.  VF is set to 1 when there's a carry and to 0 when there isn't
-					int result = ((opcode & 0x0F00) >> 8) + ((opcode & 0x00F0) >> 4);
+				{	int result = ((opcode & 0x0F00) >> 8) + ((opcode & 0x00F0) >> 4);
 					if (result > 255) {
 						V[0xF] = 1;
 					} else {
@@ -146,37 +147,44 @@ chip8::void emulateCycle() {
 					}
 					pc += 2;
 				break;
+				}
 				case 0x8005: // opcode 8XY5 VY is subtracted from VX.  VF is set to 0 when there's a borrow, and 1 when there isn't
 					// TODO fix
+				{
 					int result = ((opcode & 0x0F00) >> 8) - ((opcode & 0x00F0) >> 4);
 					if (result < 0) {
-						V[0xF] = 0
+						V[0xF] = 0;
 					} else {
 						V[(opcode & 0x0F00) >> 8] = (unsigned char) result;
 						V[0xF] = 1;
 					}
 					pc += 2;
 				break;
+				}
 				case 0x8006: // opcode 8XY6 Shifts VX right by one.  VF is set to the value of the least significant bit of VX before the shift
-					char F = 0x000F & opcode;
+				{	
 					V[(opcode & 0x0F00) >> 8] = opcode >> 1 & 0x0FFF;
 				break;
+				}
 				case 0x8007: // opcode 8XY7 Sets VX to VY minus VX.  VF is set to 0 when there's a borrow, and 1 when there isn't
+				{
 					// TODO fix
 					int result = ((opcode & 0x00F0) >> 8) - ((opcode & 0x0F00) >> 4);
 					if (result < 0) {
-						V[0xF] = 0
+						V[0xF] = 0;
 					} else {
 						V[(opcode & 0x0F00) >> 8] = (unsigned char) result;
 						V[0xF] = 1;
 					}
 					pc += 2;
 				break;
+				}
 				case 0x800E: // opcode 8XYE shifts VX left by one.  VF is set to the value of the most significant bit of VX before the shift
-					char F = 0xF000 & opcode;
+				{
 					V[(opcode & 0x0F00) >> 8] = opcode << 1 & 0xFFF0;
-					p c+= 2;
+					pc += 2;
 				break;
+				}
 			}
 		break;
 		case 0x9000: //Skips the next instruction if VX doesn't equal VY
@@ -197,7 +205,6 @@ chip8::void emulateCycle() {
 		case 0xC000: // CXNN Sets VX to the result of a bitwise and operation on a randon number and NN
 			V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF) & rand();
 			pc+=2;
-		}
 		break;
 		case 0xD000: // Sprites stored in memory at location in index register (I), 8bits wide.  
 			     // Wraps around the screen.  If when drawn, clears a pixel, register VF is 
@@ -206,6 +213,7 @@ chip8::void emulateCycle() {
 			     // is the number of 8bit rows that need to be drawn.  If N is greater than 1,
 			     //second line continues at position VX,VY+1, and so on.
 			 // Not my code for this opcode
+		{
 			unsigned short x = (opcode & 0x0F00) >> 8;
 			unsigned short y = (opcode & 0x00F0) >> 4;
 			unsigned short height = (opcode & 0x000F);
@@ -225,8 +233,8 @@ chip8::void emulateCycle() {
 											  
 			drawFlag = true;
 			pc += 2;
-			}
 		break;
+		}
 		case 0xE000:
 			switch (opcode & 0x00FF) {
 				case 0xE09E: // EX9E Skips the next instruction if the key stored in VX is pressed
@@ -253,7 +261,7 @@ chip8::void emulateCycle() {
 				break;
 				case 0xF00A: // FX0A a key press is awaited, and then sotred in VX
 					bool t;
-				 	for (int i = 0; i < 16; i++); {
+				 	for (int i = 0; i < 16; i++) {
 						if (key[i] != 0) {
 							V[(opcode & 0x0F00) >> 8] = i;
 							t = true;
@@ -278,6 +286,7 @@ chip8::void emulateCycle() {
 				break;
 				case 0xF029: // FX29 Sets I to the location of the sprite for the character in vx.  
 					     // Characters 0-F (in hexadecimal) are represented by a 4x5 font
+				{
 					unsigned char character = V[(opcode & 0x0F00) >> 8];
 					if (character < 0 || character > 15) {
 						printf("Error in FX29: character not 0-F");
@@ -286,6 +295,7 @@ chip8::void emulateCycle() {
 					I = 5 * character;
 					pc += 2;
 				break;
+				}
 				case 0xF033: // FX33 Stores the binary-coded decimal representation of VX, 
 					     // with the most significant of three digits at the address in I, 
 					     // the middle digit at I plus 1, and the least significant digit at I plus 2. 
@@ -313,7 +323,7 @@ chip8::void emulateCycle() {
 						exit(1);
 					}
 					for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
-						V[i] = memory[I + i]
+						V[i] = memory[I + i];
 					}
 					pc += 2;
 				break;
@@ -333,7 +343,8 @@ chip8::void emulateCycle() {
 		sound_timer--;
 	}
 }
-chip8::void debugRender() {
+void chip8::debugRender() {
 }
-chip8::bool loadApplication(const char * filename){
+bool chip8::loadApplication(const char * filename){
+	return true;
 }

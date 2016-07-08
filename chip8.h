@@ -21,6 +21,6 @@ class chip8 {
 		unsigned short sp;
 
 		void init();
-}
+};
 
 
