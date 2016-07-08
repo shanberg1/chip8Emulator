@@ -178,7 +178,7 @@ chip8::void emulateCycle() {
 					p c+= 2;
 				break;
 			}
-		break; // Is this necessary?  unsure;
+		break;
 		case 0x9000: //Skips the next instruction if VX doesn't equal VY
 			if (V[opcode & 0x0F00] != V[opcode & 0x00F0]) {
 				pc+=4;
@@ -199,13 +199,33 @@ chip8::void emulateCycle() {
 			pc+=2;
 		}
 		break;
-		case 0xD000: // Sprites stored in memory at location in index register (i), 8bits wide.  
+		case 0xD000: // Sprites stored in memory at location in index register (I), 8bits wide.  
 			     // Wraps around the screen.  If when drawn, clears a pixel, register VF is 
 			     // set to 1 otherwise it is zero.  All drawing is XOR drawing(i.e. it toggles
 			     // the screen to pixels).  Sprites are drawn starting at position VX, VY.  N
 			     // is the number of 8bit rows that need to be drawn.  If N is greater than 1,
 			     //second line continues at position VX,VY+1, and so on.
-			 // TODO it
+			 // Not my code for this opcode
+			unsigned short x = (opcode & 0x0F00) >> 8;
+			unsigned short y = (opcode & 0x00F0) >> 4;
+			unsigned short height = (opcode & 0x000F);
+			unsigned short pixel;
+
+			V[0xF] = 0;
+			for (int yline = 0; yline < height; yline++) {
+			       pixel = memory[I + yline];
+			       for(int xline = 0; xline < 8; xline++) {
+			       		if((pixel & (0x80 >> xline)) != 0) {
+						if(gfx[(x + xline + ((y + yline) * 64))] == 1)
+							V[0xF] = 1;                                 
+						gfx[x + xline + ((y + yline) * 64)] ^= 1;
+					}
+				}
+			}
+											  
+			drawFlag = true;
+			pc += 2;
+			}
 		break;
 		case 0xE000:
 			switch (opcode & 0x00FF) {
@@ -258,7 +278,12 @@ chip8::void emulateCycle() {
 				break;
 				case 0xF029: // FX29 Sets I to the location of the sprite for the character in vx.  
 					     // Characters 0-F (in hexadecimal) are represented by a 4x5 font
-					// TODO it
+					unsigned char character = V[(opcode & 0x0F00) >> 8];
+					if (character < 0 || character > 15) {
+						printf("Error in FX29: character not 0-F");
+						exit(1);
+					}
+					I = 5 * character;
 					pc += 2;
 				break;
 				case 0xF033: // FX33 Stores the binary-coded decimal representation of VX, 
@@ -267,13 +292,29 @@ chip8::void emulateCycle() {
 					     // (In other words, take the decimal representation of VX, place the hundreds 
 					     // digit in memory at location in I, the tens digit at location I+1, and the 
 					     // ones digit at location I+2.)	
-					// TODO it
+					memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+					memory[I+1] = (V[((opcode & 0x0F00) >> 8)] / 10) % 10;
+					memory[I+2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
 					pc += 2;
 				break;
 				case 0xF055: // Stores Vo to VX (including VX) in memory starting at address I.
+					if (I >= 4096 || I < 80) {
+						printf("I is out of range");
+						exit(1);
+					}
+					for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+						memory[I + i] = V[i];
+					}
 					pc += 2;
 				break;
-				case 0xF065: // Fills V0 to VX (including VX with values from memory starting at address I
+				case 0xF065: // Fills V0 to VX (including VX) with values from memory starting at address I
+					if (I >= 4096 || I < 80) {
+						printf("I is out of range");
+						exit(1);
+					}
+					for (int i = 0; i <= ((opcode & 0x0F00) >> 8); i++) {
+						V[i] = memory[I + i]
+					}
 					pc += 2;
 				break;
 			}
@@ -285,10 +326,11 @@ chip8::void emulateCycle() {
 
 	// Update timers
 	if (delay_timer > 0) {
-		if (sound_timer == 1) {
-			printf("BEEP!\n");
-			sound_timer--;
-		}
+		delay_timer--;
+	}
+	if (sound_timer == 1) {
+		printf("BEEP!\n");
+		sound_timer--;
 	}
 }
 chip8::void debugRender() {
