@@ -346,5 +346,15 @@ void chip8:: emulateCycle() {
 void chip8::debugRender() {
 }
 bool chip8::loadApplication(const char * filename){
+	char * ptr = &filename;
+	int i;
+	for (i = 0x200; i < 0xFFF; i++) {
+		memory[i] = (ptr);
+	}
+	if (i == 0xFFF) {
+		return false;
+	}
 	return true;
+}
+void chip8::setKeys() {
 }

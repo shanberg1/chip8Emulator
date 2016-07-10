@@ -7,6 +7,7 @@ class chip8 {
 		void emulateCycle();
 		void debugRender();
 		bool loadApplication(const char * filename);
+		void setKeys();
 		unsigned char gfx[64 * 32];
 		unsigned char key[16];
 	private:
